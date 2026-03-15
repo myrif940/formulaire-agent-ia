@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionnaire Agent IA Personnalisé</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #7C3AED;
+            --primary-light: #9F67FF;
+            --secondary: #10B981;
+            --dark: #1F2937;
+            --gray: #6B7280;
+            --light-gray: #F3F4F6;
+            --white: #FFFFFF;
+            --error: #EF4444;
+            --success: #10B981;
+            --gradient: linear-gradient(135deg, #7C3AED 0%, #9F67FF 100%);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container { max-width: 900px; width: 100%; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; color: var(--white); }
+        .header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 10px; }
+        .header p { font-size: 1rem; opacity: 0.9; }
+        .progress-container {
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 15px;
+        }
+        .progress-bar { display: flex; justify-content: space-between; position: relative; }
+        .progress-step { display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .step-number {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.3); border: 2px solid var(--white);
+            color: var(--white); display: flex; align-items: center; justify-content: center;
+            font-weight: 600; margin-bottom: 8px;
+        }
+        .step-label { color: var(--white); font-size: 0.9rem; }
+        .progress-step.active .step-number { background: var(--white); color: var(--primary); }
+        .progress-step.completed .step-number { background: var(--success); border-color: var(--success); }
+        .form-card {
+            background: var(--white);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .form-header {
+            background: var(--gradient);
+            padding: 30px;
+            color: var(--white);
+        }
+        .form-header h2 { font-size: 1.5rem; margin-bottom: 10px; }
+        .form-body { padding: 30px; }
+        .form-section { display: none; }
+        .form-section.active { display: block; }
+        .form-group { margin-bottom: 25px; }
+        .form-label { display: block; font-weight: 600; margin-bottom: 8px; color: var(--dark); }
+        .form-label .required { color: var(--error); }
+        .form-control {
+            width: 100%; padding: 12px 16px;
+            border: 2px solid var(--light-gray); border-radius: 10px;
+            font-size: 1rem; font-family: 'Inter', sans-serif;
+        }
+        .form-control:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+        }
+        textarea.form-control { min-height: 100px; resize: vertical; }
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 12px center;
+            padding-right: 40px;
+        }
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+        .option-item { position: relative; }
+        .option-item input { position: absolute; opacity: 0; }
+        .option-item label {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; border: 2px solid var(--light-gray);
+            border-radius: 10px; cursor: pointer; transition: all 0.3s;
+        }
+        .option-item label:hover { border-color: var(--primary-light); background: rgba(124, 58, 237, 0.05); }
+        .option-item input:checked + label { border-color: var(--primary); background: rgba(124, 58, 237, 0.1); font-weight: 500; }
+        .scale-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .scale-item { flex: 1; min-width: 50px; }
+        .scale-item input { position: absolute; opacity: 0; }
+        .scale-item label {
+            display: flex; align-items: center; justify-content: center;
+            height: 50px; border: 2px solid var(--light-gray); border-radius: 10px;
+            font-weight: 600; cursor: pointer; transition: all 0.3s;
+        }
+        .scale-item input:checked + label { background: var(--primary); border-color: var(--primary); color: var(--white); }
+        .scale-labels { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem; color: var(--gray); }
+        .error-message { color: var(--error); font-size: 0.85rem; margin-top: 5px; display: none; }
+        .error-message.show { display: block; }
+        .char-count { font-size: 0.85rem; color: var(--gray); text-align: right; margin-top: 5px; }
+        .form-buttons { display: flex; justify-content: space-between; margin-top: 30px; gap: 15px; }
+        .btn {
+            padding: 14px 28px; border: none; border-radius: 10px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-prev { background: var(--light-gray); color: var(--gray); }
+        .btn-next, .btn-submit { background: var(--gradient); color: var(--white); margin-left: auto; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .success-screen { display: none; text-align: center; padding: 40px; background: var(--white); border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .success-icon { width: 80px; height: 80px; background: var(--success); color: var(--white); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 20px; }
+        .success-screen h2 { font-size: 2rem; color: var(--dark); margin-bottom: 10px; }
+        .summary-box { background: var(--light-gray); border-radius: 15px; padding: 25px; margin: 20px 0; text-align: left; }
+        .summary-item { display: flex; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        .summary-item:last-child { border-bottom: none; }
+        .summary-label { font-weight: 600; width: 150px; color: var(--dark); }
+        .summary-value { color: var(--gray); flex: 1; }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5rem; }
+            .progress-step .step-label { display: none; }
+            .options-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Créez votre Assistant IA Sur Mesure</h1>
+            <p>Répondez à ces quelques questions pour concevoir l'assistant parfait pour vos besoins</p>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-step active" data-step="1"><div class="step-number">1</div><div class="step-label">Profil</div></div>
+                <div class="progress-step" data-step="2"><div class="step-number">2</div><div class="step-label">Activité</div></div>
+                <div class="progress-step" data-step="3"><div class="step-number">3</div><div class="step-label">Besoins</div></div>
+                <div class="progress-step" data-step="4"><div class="step-number">4</div><div class="step-label">Finalisation</div></div>
+            </div>
+        </div>
+        <div class="form-card" id="form-card">
+            <div class="form-header">
+                <h2 id="form-title">Étape 1 : Votre Profil</h2>
+                <p id="form-subtitle">Commençons par en savoir un peu plus sur vous</p>
+            </div>
+            <div class="form-body">
+                <div class="form-section active" id="step-1">
+                    <div class="form-group">
+                        <label class="form-label">Vous êtes <span class="required">*</span></label>
+                        <div class="options-grid">
+                            <div class="option-item"><input type="radio" name="profil" id="profil1" value="particulier"><label for="profil1">✓ Particulier</label></div>
+                            <div class="option-item"><input type="radio" name="profil" id="profil2" value="independant"><label for="profil2">✓ Indépendant / Freelance</label></div>
+                            <div class="option-item"><input type="radio" name="profil" id="profil3" value="tpe"><label for="profil3">✓ TPE</label></div>
+                            <div class="option-item"><input type="radio" name="profil" id="profil4" value="pme"><label for="profil4">✓ PME</label></div>
+                        </div>
+                        <div class="error-message" id="error-profil">Veuillez sélectionner votre profil</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nom / Prénom ou Raison sociale <span class="required">*</span></label>
+                        <input type="text" class="form-control" id="nom" placeholder="Ex: Jean Dupont">
+                        <div class="error-message" id="error-nom">Ce champ est requis</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email professionnel <span class="required">*</span></label>
+                        <input type="email" class="form-control" id="email" placeholder="exemple@entreprise.com">
+                        <div class="error-message" id="error-email">Email invalide</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Téléphone</label>
+                        <input type="tel" class="form-control" id="telephone" placeholder="06 12 34 56 78">
+                    </div>
+                </div>
+                <div class="form-section" id="step-2">
+                    <div class="form-group">
+                        <label class="form-label">Secteur d'activité <span class="required">*</span></label>
+                        <select class="form-control" id="secteur">
+                            <option value="">Sélectionnez votre secteur</option>
+                            <option value="tech">Tech / Informatique</option>
+                            <option value="commerce">Commerce / E-commerce</option>
+                            <option value="service">Services / Conseil</option>
+                            <option value="sante">Santé / Bien-être</option>
+                            <option value="education">Éducation / Formation</option>
+                            <option value="immobilier">Immobilier</option>
+                            <option value="artisanat">Artisanat</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                        <div class="error-message" id="error-secteur">Veuillez sélectionner votre secteur</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Décrivez votre activité <span class="required">*</span></label>
+                        <textarea class="form-control" id="description" placeholder="Parlez-nous de votre entreprise..." maxlength="500"></textarea>
+                        <div class="char-count"><span id="desc-count">0</span>/500</div>
+                        <div class="error-message" id="error-description">Ce champ est requis</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Taille de l'équipe</label>
+                        <div class="options-grid">
+                            <div class="option-item"><input type="radio" name="equipe" id="equipe1" value="seul"><label for="equipe1">✓ Seul(e)</label></div>
+                            <div class="option-item"><input type="radio" name="equipe" id="equipe2" value="2-5"><label for="equipe2">✓ 2-5 personnes</label></div>
+                            <div class="option-item"><input type="radio" name="equipe" id="equipe3" value="6-20"><label for="equipe3">✓ 6-20 personnes</label></div>
+                            <div class="option-item"><input type="radio" name="equipe" id="equipe4" value="20+"><label for="equipe4">✓ Plus de 20</label></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-section" id="step-3">
+                    <div class="form-group">
+                        <label class="form-label">Tâches à automatiser ? <span class="required">*</span></label>
+                        <div class="options-grid">
+                            <div class="option-item"><input type="checkbox" id="tache1" value="service_client"><label for="tache1">✓ Service client</label></div>
+                            <div class="option-item"><input type="checkbox" id="tache2" value="gestion_emails"><label for="tache2">✓ Gestion emails</label></div>
+                            <div class="option-item"><input type="checkbox" id="tache3" value="prise_rdv"><label for="tache3">✓ Prise de RDV</label></div>
+                            <div class="option-item"><input type="checkbox" id="tache4" value="creation_contenu"><label for="tache4">✓ Création contenu</label></div>
+                            <div class="option-item"><input type="checkbox" id="tache5" value="analyse_donnees"><label for="tache5">✓ Analyse données</label></div>
+                            <div class="option-item"><input type="checkbox" id="tache6" value="reseaux"><label for="tache6">✓ Réseaux sociaux</label></div>
+                        </div>
+                        <div class="error-message" id="error-taches">Sélectionnez au moins une tâche</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Besoin principal <span class="required">*</span></label>
+                        <textarea class="form-control" id="besoin-detail" placeholder="Expliquez ce que vous attendez..." maxlength="600"></textarea>
+                        <div class="char-count"><span id="besoin-count">0</span>/600</div>
+                        <div class="error-message" id="error-besoin">Ce champ est requis</div>
+                    </div>
+                </div>
+                <div class="form-section" id="step-4">
+                    <div class="form-group">
+                        <label class="form-label">Priorité principale <span class="required">*</span></label>
+                        <div class="options-grid">
+                            <div class="option-item"><input type="radio" name="priorite" id="priorite1" value="temps"><label for="priorite1">✓ Gagner du temps</label></div>
+                            <div class="option-item"><input type="radio" name="priorite" id="priorite2" value="qualite"><label for="priorite2">✓ Qualité de service</label></div>
+                            <div class="option-item"><input type="radio" name="priorite" id="priorite3" value="productivite"><label for="priorite3">✓ Productivité</label></div>
+                            <div class="option-item"><input type="radio" name="priorite" id="priorite4" value="satisfaction"><label for="priorite4">✓ Satisfaction client</label></div>
+                        </div>
+                        <div class="error-message" id="error-priorite">Sélectionnez votre priorité</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Niveau IA (1-5) <span class="required">*</span></label>
+                        <div class="scale-row">
+                            <div class="scale-item"><input type="radio" name="niveau-ia" id="niveau1" value="1"><label for="niveau1">1</label></div>
+                            <div class="scale-item"><input type="radio" name="niveau-ia" id="niveau2" value="2"><label for="niveau2">2</label></div>
+                            <div class="scale-item"><input type="radio" name="niveau-ia" id="niveau3" value="3"><label for="niveau3">3</label></div>
+                            <div class="scale-item"><input type="radio" name="niveau-ia" id="niveau4" value="4"><label for="niveau4">4</label></div>
+                            <div class="scale-item"><input type="radio" name="niveau-ia" id="niveau5" value="5"><label for="niveau5">5</label></div>
+                        </div>
+                        <div class="scale-labels"><span>Débutant</span><span>Expert</span></div>
+                        <div class="error-message" id="error-niveau">Indiquez votre niveau</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Budget mensuel</label>
+                        <div class="options-grid">
+                            <div class="option-item"><input type="radio" name="budget" id="budget1" value="<50"><label for="budget1">✓ &lt; 50€</label></div>
+                            <div class="option-item"><input type="radio" name="budget" id="budget2" value="50-150"><label for="budget2">✓ 50-150€</label></div>
+                            <div class="option-item"><input type="radio" name="budget" id="budget3" value="150-500"><label for="budget3">✓ 150-500€</label></div>
+                            <div class="option-item"><input type="radio" name="budget" id="budget4" value=">500"><label for="budget4">✓ &gt; 500€</label></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Comment nous avez-vous connu ?</label>
+                        <input type="text" class="form-control" id="source" placeholder="LinkedIn, Google...">
+                    </div>
+                </div>
+                <div class="form-buttons">
+                    <button class="btn btn-prev" id="prevBtn" disabled>← Précédent</button>
+                    <button class="btn btn-next" id="nextBtn">Suivant →</button>
+                    <button class="btn btn-submit" id="submitBtn" style="display: none;">Envoyer ✦</button>
+                </div>
+            </div>
+        </div>
+        <div class="success-screen" id="success-screen">
+            <div class="success-icon">✓</div>
+            <h2>Formulaire envoyé !</h2>
+            <p>Merci pour vos réponses. Nous reviendrons vers vous très rapidement.</p>
+            <div class="summary-box" id="summary-box"><h3>Récapitulatif</h3><div id="summary-content"></div></div>
+        </div>
+    </div>
+    <script>
+        let currentStep = 1;
+        const totalSteps = 4;
+        const stepTitles = {
+            1: { title: "Étape 1 : Votre Profil", subtitle: "Commençons par en savoir plus sur vous" },
+            2: { title: "Étape 2 : Votre Activité", subtitle: "Parlez-nous de votre contexte professionnel" },
+            3: { title: "Étape 3 : Vos Besoins", subtitle: "Ce que vous attendez de votre assistant IA" },
+            4: { title: "Étape 4 : Finalisation", subtitle: "Dernières informations" }
+        };
+        document.getElementById('description').oninput = function() { document.getElementById('desc-count').textContent = this.value.length; };
+        document.getElementById('besoin-detail').oninput = function() { document.getElementById('besoin-count').textContent = this.value.length; };
+        function updateStep(step) {
+            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('step-' + step).classList.add('active');
+            document.querySelectorAll('.progress-step').forEach((s, i) => {
+                s.classList.remove('active', 'completed');
+                if (i + 1 < step) s.classList.add('completed');
+                else if (i + 1 === step) s.classList.add('active');
+            });
+            document.getElementById('form-title').textContent = stepTitles[step].title;
+            document.getElementById('form-subtitle').textContent = stepTitles[step].subtitle;
+            document.getElementById('prevBtn').disabled = step === 1;
+            document.getElementById('nextBtn').style.display = step === totalSteps ? 'none' : 'flex';
+            document.getElementById('submitBtn').style.display = step === totalSteps ? 'flex' : 'none';
+            currentStep = step;
+        }
+        function validateStep(step) {
+            document.querySelectorAll('.error-message').forEach(el => el.classList.remove('show'));
+            let ok = true;
+            if (step === 1) {
+                if (!document.querySelector('input[name="profil"]:checked')) { document.getElementById('error-profil').classList.add('show'); ok = false; }
+                if (!document.getElementById('nom').value.trim()) { document.getElementById('error-nom').classList.add('show'); ok = false; }
+                const email = document.getElementById('email').value.trim();
+                if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('error-email').classList.add('show'); ok = false; }
+            } else if (step === 2) {
+                if (!document.getElementById('secteur').value) { document.getElementById('error-secteur').classList.add('show'); ok = false; }
+                if (!document.getElementById('description').value.trim()) { document.getElementById('error-description').classList.add('show'); ok = false; }
+            } else if (step === 3) {
+                if (document.querySelectorAll('#step-3 input[type="checkbox"]:checked').length === 0) { document.getElementById('error-taches').classList.add('show'); ok = false; }
+                if (!document.getElementById('besoin-detail').value.trim()) { document.getElementById('error-besoin').classList.add('show'); ok = false; }
+            } else if (step === 4) {
+                if (!document.querySelector('input[name="priorite"]:checked')) { document.getElementById('error-priorite').classList.add('show'); ok = false; }
+                if (!document.querySelector('input[name="niveau-ia"]:checked')) { document.getElementById('error-niveau').classList.add('show'); ok = false; }
+            }
+            return ok;
+        }
+        document.getElementById('nextBtn').onclick = function() {
+            if (validateStep(currentStep) && currentStep < totalSteps) { updateStep(currentStep + 1); window.scrollTo(0, 0); }
+        };
+        document.getElementById('prevBtn').onclick = function() {
+            if (currentStep > 1) { updateStep(currentStep - 1); window.scrollTo(0, 0); }
+        };
+        document.getElementById('submitBtn').onclick = function() {
+            if (!validateStep(4)) return;
+            const fd = {
+                profil: document.querySelector('input[name="profil"]:checked')?.value || '',
+                nom: document.getElementById('nom').value,
+                email: document.getElementById('email').value,
+                telephone: document.getElementById('telephone').value,
+                secteur: document.getElementById('secteur').value,
+                description: document.getElementById('description').value,
+                equipe: document.querySelector('input[name="equipe"]:checked')?.value || '',
+                taches: Array.from(document.querySelectorAll('#step-3 input[type="checkbox"]:checked')).map(c => c.value).join(', '),
+                besoin: document.getElementById('besoin-detail').value,
+                priorite: document.querySelector('input[name="priorite"]:checked')?.value || '',
+                niveau: document.querySelector('input[name="niveau-ia"]:checked')?.value || '',
+                budget: document.querySelector('input[name="budget"]:checked')?.value || '',
+                source: document.getElementById('source').value
+            };
+            document.getElementById('summary-content').innerHTML = Object.entries(fd).map(([k,v]) => '<div class="summary-item"><span class="summary-label">' + k + ' :</span><span class="summary-value">' + (v || '-') + '</span></div>').join('');
+            document.getElementById('form-card').style.display = 'none';
+            document.querySelector('.progress-container').style.display = 'none';
+            document.getElementById('success-screen').style.display = 'block';
+            console.log('Données:', fd);
+        };
+    </script>
+</body>
+</html>
