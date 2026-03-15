@@ -123,6 +123,7 @@
         .summary-item:last-child { border-bottom: none; }
         .summary-label { font-weight: 600; width: 150px; color: var(--dark); }
         .summary-value { color: var(--gray); flex: 1; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 768px) {
             .header h1 { font-size: 1.5rem; }
             .progress-step .step-label { display: none; }
@@ -331,8 +332,12 @@
         document.getElementById('prevBtn').onclick = function() {
             if (currentStep > 1) { updateStep(currentStep - 1); window.scrollTo(0, 0); }
         };
-        document.getElementById('submitBtn').onclick = function() {
+        document.getElementById('submitBtn').onclick = async function() {
             if (!validateStep(4)) return;
+            const btn = document.getElementById('submitBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span style="display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px;"></span> Envoi en cours...';
+            btn.disabled = true;
             const fd = {
                 profil: document.querySelector('input[name="profil"]:checked')?.value || '',
                 nom: document.getElementById('nom').value,
@@ -348,11 +353,25 @@
                 budget: document.querySelector('input[name="budget"]:checked')?.value || '',
                 source: document.getElementById('source').value
             };
-            document.getElementById('summary-content').innerHTML = Object.entries(fd).map(([k,v]) => '<div class="summary-item"><span class="summary-label">' + k + ' :</span><span class="summary-value">' + (v || '-') + '</span></div>').join('');
-            document.getElementById('form-card').style.display = 'none';
-            document.querySelector('.progress-container').style.display = 'none';
-            document.getElementById('success-screen').style.display = 'block';
-            console.log('Données:', fd);
+            try {
+                const res = await fetch('https://formspree.io/f/maqpdlon', {
+                    method: 'POST',
+                    body: JSON.stringify(fd),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (res.ok) {
+                    document.getElementById('summary-content').innerHTML = Object.entries(fd).map(([k,v]) => '<div class="summary-item"><span class="summary-label">' + k + ' :</span><span class="summary-value">' + (v || '-') + '</span></div>').join('');
+                    document.getElementById('form-card').style.display = 'none';
+                    document.querySelector('.progress-container').style.display = 'none';
+                    document.getElementById('success-screen').style.display = 'block';
+                } else {
+                    throw new Error('Erreur envoi');
+                }
+            } catch (e) {
+                alert('Une erreur est survenue. Vérifiez votre connexion et réessayez.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         };
     </script>
 </body>
